@@ -412,9 +412,11 @@ int egs_mird::output_3ddose() {
 				}
         out << "\n";
         out.close();
+		return 1;
     }
     else {
         egsFatal("\noutput_3ddose(): Failed to open file %s for writing.\n", fileName);
+		return 0;
     }
 }
 
@@ -491,9 +493,11 @@ int egs_mird::output_b3ddose() {
 				}
 		
         out.close();
+		return 1;
     }
     else {
         egsFatal("\noutput_b3ddose(): Failed to open file %s for writing.\n", fileName);
+		return 0;
     }	
 }
 
