@@ -92,7 +92,7 @@ public:
 	int output_b3ddose();
 
 protected:
-
+    int simulateSingleShower();
     int startNewShower();
 };
 
@@ -158,9 +158,9 @@ int egs_mird::initScoring() {
 	
 	// Variance reduction technique setup
     options = input->takeInputItem("variance reduction");
+	egsInformation("Variance Reduction techniques:\n"
+				   "==============================\n");
 	if (options) {
-		egsInformation("Variance Reduction techniques:\n"
-					   "==============================\n");
 
 		// Check for track length scoring
 		initTrackLengthScoring(options);
@@ -302,51 +302,117 @@ void egs_mird::getCurrentResult(EGS_Float &sum, EGS_Float &sum2, EGS_Float &norm
     score->currentScore(nreg/2, sum, sum2);
 }
 
-int egs_mird::startNewShower() {
-    int err = EGS_Application::startNewShower();
-    if (err) {
-        return err;
-    }
-	int ir = top_p.ir-offset;
+int egs_mird::simulateSingleShower() {
+    int ireg;
+	int ntry = 0;
+	last_case = current_case;
+	do {
+		ntry++;
+		if (ntry > 100000) {
+			egsWarning("EGS_Application::simulateSingleShower(): no particle"
+					   " from the source has entered the geometry after 100000"
+					   " attempts\n");
+			return 1;
+		}
+		current_case = source->getNextParticle(rndm,p.q,p.latch,p.E,p.wt,p.x,p.u);
+		ireg = geometry->isWhere(p.x);
+		if (ireg < 0) {
+			EGS_Float t = veryFar;
+			ireg = geometry->howfar(ireg,p.x,p.u,t);
+			if (ireg >= 0) {
+				p.x += p.u*t;
+			}
+		}
+	} while (ireg < 0);
 	
-	if (regWeight_RR && top_p.wt) { // If RR and particle not set to no weight
-		if (ir >= 0 && ir < nreg && regWeight_wgt->at(ir) > 0) {
+	p.ir = ireg; // global geometry region is set
+	
+	int err = startNewShower();
+	if (err) {
+		return err;
+	}
+	
+	ireg = doseg->isWhere(p.x); // ireg now holds scoring geometry local region
+	
+	//double omitEnergy = 0.002;
+	//if ((p.q == -1 && p.E <= (0.5109989461+omitEnergy)) || (p.q == 0 && p.E <= omitEnergy)) {
+	//	p.wt = 0; // Ignore it
+	//}
+	
+	if (score_tlen && p.q) { // Tracklength scoring and a non-photon
+		EGS_Float aux = p.E;
+		if (ireg >= 0 && ireg < nreg && aux > 0) { // Score it
+			aux *= p.wt; // Scale by particle weight
+			EGS_Float norm2 = the_media->rho[doseg->medium(ireg)]*doseg->getRelativeRho(ireg);
+			norm2 *= geometry->getMass(ireg)/geometry->getRelativeRho(ireg);
+			aux /= norm2; // Normalize to dose to match track length
+			score->score(ireg,aux);
+		}
+		p.wt = 0; // Ignore it
+		p.E = 0.5109989461; // Dump the energy
+	}
+	
+	if (regWeight_RR && p.wt) { // If RR and particle not set to no weight
+		if (ireg >= 0 && ireg < nreg && regWeight_wgt->at(ireg) > 0) {
 			// Get the relative weight between
-			double weight = regWeight_wgt->at(ir)/regWeight_min*regWeight_mul;
+			double weight = regWeight_wgt->at(ireg)/regWeight_min*regWeight_mul;
 			weight = 1/weight;
 			if (rndm->getUniform() < weight) {
-				top_p.wt /= weight;
+				p.wt /= weight;
 			}
 			else {
-				top_p.wt = 0;
-				the_stack->wt[the_stack->np-1] = 0;
-				the_epcont->idisc = 1;
+				p.wt = 0; // Ignore it
+				p.E = 0; // Dump the energy
 			}
 		}
 	}
 	
-	if (score_tlen && top_p.q) { // Tracklength scoring and a non-photon
-		EGS_Float aux = top_p.E - 0.5109989461;
-		if (ir >= 0 && ir < nreg && aux > 0) { // Score it
-			aux *= top_p.wt; // Scale by particle weight
-			EGS_Float norm2 = the_media->rho[doseg->medium(ir)]*doseg->getRelativeRho(ir);
-			norm2 *= geometry->getMass(ir)/geometry->getRelativeRho(ir);
-			aux /= norm2; // Normalize to dose to match track length
-			score->score(ir,aux);
-		}
-			
-		top_p.wt = 0; // Discard it
-		the_stack->wt[the_stack->np-1] = 0;
-		the_epcont->idisc = 1;
+	err = shower();
+	if (err) {
+		return err;
 	}
+	
+	return finishShower();
+}
+
+int egs_mird::startNewShower() {
+	int res = EGS_Application::startNewShower();
+	if( res ) return res;
 	
 	if (current_case != last_case) {
 		score->setHistory(current_case);
 		last_case = current_case;		
 	}
-		
-    return 0;
-}
+	
+	return 0;
+};
+
+//int egs_mird::startNewShower() {
+//    int err = EGS_Application::startNewShower();
+//    if (err) {
+//        return err;
+//    }
+//	int ir = top_p.ir-offset;
+//
+//	if (score_tlen && top_p.q) { // Tracklength scoring and a non-photon
+//		EGS_Float aux = top_p.E - 0.5109989461;
+//		if (ir >= 0 && ir < nreg && aux > 0) { // Score it
+//			aux *= top_p.wt; // Scale by particle weight
+//			EGS_Float norm2 = the_media->rho[doseg->medium(ir)]*doseg->getRelativeRho(ir);
+//			norm2 *= geometry->getMass(ir)/geometry->getRelativeRho(ir);
+//			aux /= norm2; // Normalize to dose to match track length
+//			score->score(ir,aux);
+//			std::cout << "Electron dose scored!\n";
+//		}
+//	}
+//	
+//	if (current_case != last_case) {
+//		score->setHistory(current_case);
+//		last_case = current_case;		
+//	}
+//		
+//    return 0;
+//}
 
 int egs_mird::output_3ddose() {
 	EGS_Float norm = MEV_TO_GY*current_case/source->getFluence();
