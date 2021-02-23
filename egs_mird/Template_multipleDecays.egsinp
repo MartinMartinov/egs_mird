@@ -11,8 +11,8 @@
 :start media definition:
 	AE = 0.512 # Above Electron energy (MeV), defines the lower end cutoff for electron simulation
 	UE = 2.011 # Under Electron energy (MeV), defines the upper end cutoff for electron simulation
-	AP = 0.001 # Above Photon energy (MeV), defines the lower end cutoff for photon simulation
-	UP = 1.500 # Under Photon energy (MeV), defines the upper end cutoff for photon simulation
+	AP = 0.001 # Above Photon   energy (MeV), defines the lower end cutoff for photon   simulation
+	UP = 1.500 # Under Photon   energy (MeV), defines the upper end cutoff for photon   simulation
 
 	# WARNING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	# If you are using track length scoring, be sure
@@ -69,13 +69,80 @@
 	:stop source:
 	
 	:start source:
-		name        = the_source
+		name        = the_source_1
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
 			type    = radionuclide
-			nuclide = Lu-177 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			nuclide = Ac-225 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
 		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_2
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = Fr-221 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_3
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = At-217 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_4
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = Bi-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_5a
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = Po-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_5b
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = Tl-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name        = the_source_6
+		library     = egs_radionuclide_source
+		base source = the_source_location
+		:start spectrum:
+			type    = radionuclide
+			nuclide = Pb-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+		:stop spectrum:
+	:stop source:
+	
+	:start source:
+		name         = the_source
+		library      = egs_source_collection
+		source names = the_source_1 the_source_2 the_source_3 the_source_4 the_source_5a the_source_5b the_source_6
+		weights      = 1            1            1            1            0.9784        0.0216        1           
 	:stop source:
 	
 	simulation source = the_source
@@ -90,7 +157,7 @@
 :stop scoring options:
 #-------------------------------------------------------------------------------
 :start variance reduction:	
-	score tracklength dose   = yes
+	score tracklength dose   = no
 	muen file                = /home/martinov/EGSnrc/egs_home/egs_mird/MIRD_xcom_1.0MeV.muendat
 	
 	# Commented out as the added variance reduction as it disturbs the normalization when using egs_radionuclide_source
