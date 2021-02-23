@@ -44,7 +44,6 @@ class APP_EXPORT egs_mird : public EGS_AdvancedApplication {
 	EGS_Float				   regWeight_min; // lowest weight for RR
 	EGS_Float				   regWeight_max; // highest weight for RR
 	EGS_Float				   regWeight_mul; // multiplier for RR
-	EGS_I64                    regWeight_cnt; // counter for rejected particles
 	
 	bool              binDose;  // option for outputting binary 3ddose files
 	string            fileName; 
@@ -176,7 +175,6 @@ int egs_mird::initScoring() {
 		score_tlen = 0;
 		regWeight_RR = 0;
 	}
-	regWeight_cnt = 0;
 		
     egsInformation("==============================\n");
 	delete options;
@@ -262,7 +260,6 @@ int egs_mird::addState(istream &data) {
 
 void egs_mird::outputResults() {
     egsInformation("\n\n last case = %lld fluence = %g\n\n", current_case, source->getFluence());
-    egsInformation("\n\n particles rejected:%lld\n\n", regWeight_cnt);
 	EGS_Float norm = MEV_TO_J*current_case/source->getFluence();
 	double sum, sum2;
 	
@@ -347,7 +344,6 @@ int egs_mird::simulateSingleShower() {
 			}
 			else { // Else, kill it
 				discard++; // flag a discard
-				regWeight_cnt++;
 			}
 		}
 	}
