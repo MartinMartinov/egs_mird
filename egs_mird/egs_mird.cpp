@@ -34,6 +34,7 @@ class APP_EXPORT egs_mird : public EGS_AdvancedApplication {
     EGS_BaseGeometry *doseg;          // scoring geometry
     int               nreg;           // number of regions in the scoring geometry
 	int               offset;         // swap from global region to dose region
+	int				  discard;        // flag a particle to be discarded
 	
 	bool                       score_tlen; // score tracklength
 	vector <EGS_Interpolator*> muenDat;    // interpolators holding all the muen data
@@ -41,7 +42,9 @@ class APP_EXPORT egs_mird : public EGS_AdvancedApplication {
     vector<EGS_Float>    	  *regWeight_wgt; // holds all weights
     vector<int>          	  *regWeight_reg; // holds all regions
 	EGS_Float				   regWeight_min; // lowest weight for RR
+	EGS_Float				   regWeight_max; // highest weight for RR
 	EGS_Float				   regWeight_mul; // multiplier for RR
+	EGS_I64                    regWeight_cnt; // counter for rejected particles
 	
 	bool              binDose;  // option for outputting binary 3ddose files
 	string            fileName; 
@@ -173,6 +176,7 @@ int egs_mird::initScoring() {
 		score_tlen = 0;
 		regWeight_RR = 0;
 	}
+	regWeight_cnt = 0;
 		
     egsInformation("==============================\n");
 	delete options;
@@ -189,7 +193,7 @@ int egs_mird::ausgab(int iarg) {
     if (score_tlen && !top_p.q && !iarg) {
 		EGS_Float muen_val = muenDat[the_useful->medium-1]->interpolateFast(the_epcont->gle);
 		
-		EGS_Float aux = the_epcont->tvstep*top_p.E*muen_val*top_p.wt;
+		EGS_Float aux = the_epcont->tvstep*top_p.E*muen_val;//*top_p.wt;
 		EGS_Float vol = geometry->getMass(ir)/geometry->getRelativeRho(ir);
 
 		if (vol > 0 && aux > 0) {
@@ -198,7 +202,7 @@ int egs_mird::ausgab(int iarg) {
 		}
     }
 	else if (!score_tlen && iarg <= ExtraEnergy) {
-		EGS_Float aux = the_epcont->edep*top_p.wt;
+		EGS_Float aux = the_epcont->edep;//*top_p.wt;
 		score->score(ir,aux);
 	}
 
@@ -216,9 +220,6 @@ int egs_mird::outputData() {
     if (!score->storeState(*data_out)) {
         return 101;
     }
-	//if (!scoreE->storeState(*data_out)) {
-	//	return 102;
-	//}
 		
     return 0;
 }
@@ -234,9 +235,6 @@ int egs_mird::readData() {
     if (!score->setState(*data_in)) {
         return 201;
     }
-	//if (!scoreE->setState(*data_in)) {
-	//	return 202;
-	//}
     return 0;
 }
 
@@ -246,7 +244,6 @@ void egs_mird::resetCounter() {
 	
 	// Reset dose scoring arrays
     score->reset();
-	//scoreE->reset();
 }
 
 int egs_mird::addState(istream &data) {
@@ -260,17 +257,12 @@ int egs_mird::addState(istream &data) {
     }
     (*score) += tmp;
 	
-	//EGS_ScoringArray tmp2(score_tlen?nreg:1);
-	//if (!tmp.setState(data)) {
-	//	return 302;
-	//}
-	//(*scoreE) += tmp2;
-	
 	return 0;
 }
 
 void egs_mird::outputResults() {
     egsInformation("\n\n last case = %lld fluence = %g\n\n", current_case, source->getFluence());
+    egsInformation("\n\n particles rejected:%lld\n\n", regWeight_cnt);
 	EGS_Float norm = MEV_TO_J*current_case/source->getFluence();
 	double sum, sum2;
 	
@@ -305,6 +297,7 @@ void egs_mird::getCurrentResult(EGS_Float &sum, EGS_Float &sum2, EGS_Float &norm
 int egs_mird::simulateSingleShower() {
     int ireg;
 	int ntry = 0;
+	discard = 0;
 	last_case = current_case;
 	do {
 		ntry++;
@@ -334,11 +327,6 @@ int egs_mird::simulateSingleShower() {
 	
 	ireg = doseg->isWhere(p.x); // ireg now holds scoring geometry local region
 	
-	//double omitEnergy = 0.002;
-	//if ((p.q == -1 && p.E <= (0.5109989461+omitEnergy)) || (p.q == 0 && p.E <= omitEnergy)) {
-	//	p.wt = 0; // Ignore it
-	//}
-	
 	if (score_tlen && p.q) { // Tracklength scoring and a non-photon
 		EGS_Float aux = p.E;
 		if (ireg >= 0 && ireg < nreg && aux > 0) { // Score it
@@ -348,24 +336,24 @@ int egs_mird::simulateSingleShower() {
 			aux /= norm2; // Normalize to dose to match track length
 			score->score(ireg,aux);
 		}
-		p.wt = 0; // Ignore it
-		p.E = 0.5109989461; // Dump the energy
+		discard++; // flag a discard
 	}
 	
-	if (regWeight_RR && p.wt) { // If RR and particle not set to no weight
+	if (regWeight_RR && !discard) { // If RR and particle not discarded
 		if (ireg >= 0 && ireg < nreg && regWeight_wgt->at(ireg) > 0) {
-			// Get the relative weight between
-			double weight = regWeight_wgt->at(ireg)/regWeight_min*regWeight_mul;
-			weight = 1/weight;
-			if (rndm->getUniform() < weight) {
-				p.wt /= weight;
+			// Sample against the region weight
+			if (rndm->getUniform() < regWeight_wgt->at(ireg)) { // If it survives, increase weight appropriately
+				p.wt /= regWeight_wgt->at(ireg);
 			}
-			else {
-				p.wt = 0; // Ignore it
-				p.E = 0; // Dump the energy
+			else { // Else, kill it
+				discard++; // flag a discard
+				regWeight_cnt++;
 			}
 		}
 	}
+	
+	if (discard)
+		p.wt = 0;
 	
 	err = shower();
 	if (err) {
@@ -387,35 +375,9 @@ int egs_mird::startNewShower() {
 	return 0;
 };
 
-//int egs_mird::startNewShower() {
-//    int err = EGS_Application::startNewShower();
-//    if (err) {
-//        return err;
-//    }
-//	int ir = top_p.ir-offset;
-//
-//	if (score_tlen && top_p.q) { // Tracklength scoring and a non-photon
-//		EGS_Float aux = top_p.E - 0.5109989461;
-//		if (ir >= 0 && ir < nreg && aux > 0) { // Score it
-//			aux *= top_p.wt; // Scale by particle weight
-//			EGS_Float norm2 = the_media->rho[doseg->medium(ir)]*doseg->getRelativeRho(ir);
-//			norm2 *= geometry->getMass(ir)/geometry->getRelativeRho(ir);
-//			aux /= norm2; // Normalize to dose to match track length
-//			score->score(ir,aux);
-//			std::cout << "Electron dose scored!\n";
-//		}
-//	}
-//	
-//	if (current_case != last_case) {
-//		score->setHistory(current_case);
-//		last_case = current_case;		
-//	}
-//		
-//    return 0;
-//}
-
 int egs_mird::output_3ddose() {
 	EGS_Float norm = MEV_TO_GY*current_case/source->getFluence();
+	
 	int nx = doseg->getNRegDir(0);
 	int ny = doseg->getNRegDir(1);
 	int nz = doseg->getNRegDir(2);
@@ -631,24 +593,30 @@ void egs_mird::initRegionWeightRoulette(EGS_Input *VR_options) {
 	}
 	
 	regWeight_min = regWeight_wgt->at(0);
-	for (int i = 1; i < regWeight_wgt->size(); i++)
+	regWeight_max = regWeight_wgt->at(0);
+	for (int i = 1; i < regWeight_wgt->size(); i++) {
 		if (regWeight_wgt->at(i) < regWeight_min)
 			regWeight_min = regWeight_wgt->at(i);
+		if (regWeight_wgt->at(i) > regWeight_max)
+			regWeight_max = regWeight_wgt->at(i);
+	}
+	
+	regWeight_mul = 2.0;
+    if (VR_options->getInput("relative roulette weight", regWeight_mul) != 0) {
+        egsWarning("initRegionWeightRoulette(): relative roulette weight input not found\n"
+		           "                             assuming weight of 2.\n");
+    }
 	
 	// swap from selected regions to all regions for faster lookup
     vector<EGS_Float> *regWeight_wgtFinal = new vector<EGS_Float> (nreg, 0.0);
 	for (int i = 0; i < regWeight_reg->size(); i++) {
-		(*regWeight_wgtFinal)[regWeight_reg->at(i)] = regWeight_wgt->at(i);
+		(*regWeight_wgtFinal)[regWeight_reg->at(i)] = 1.0-(regWeight_wgt->at(i)-regWeight_min)/(regWeight_max-regWeight_min)*1.0/(regWeight_mul);
 	}
 	delete regWeight_wgt;
 	delete regWeight_reg;
 	regWeight_wgt = regWeight_wgtFinal;
-	egsInformation("Region weights set\n");
 	
-    if (VR_options->getInput("relative roulette weight", regWeight_mul) != 0) {
-        egsWarning("initRegionWeightRoulette(): relative roulette weight input not found\n"
-		           "                             assuming weight of 1.\n");
-    }
+	egsInformation("Region weights set, RR ranging as high as %4.2f%% for areas with max activity\n",100.0-1.0/regWeight_mul*100.0);
 }
 
 /***************************************************************************************/

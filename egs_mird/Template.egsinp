@@ -97,7 +97,7 @@
 	# slower when determining dose to the target
 	#region weight roulette   = no
 	#region weight file       = /home/martinov/EGSnrc/egs_home/egs_mird/Lung_Activity.txt # Use file output of DICOM_to_internal_source
-	#relative roulette weight = 1
+	#relative roulette weight = 3 # RRW is defined such that only 1 in RRW particles survive at max activity
 :stop variance reduction:
 #-------------------------------------------------------------------------------
 :start MC transport parameter:
