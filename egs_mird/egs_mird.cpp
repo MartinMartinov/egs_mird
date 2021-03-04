@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <fstream>
 // We derive from EGS_AdvancedApplication => need the header file.
-#include "egs_advanced_application.h"
+#include "egs_advanced_application.h" 
 // We use scoring objects provided by egspp => need the header file.
 #include "egs_scoring.h"
 // Every C++ EGSnrc application needs this header file
@@ -78,8 +78,8 @@ public:
 	void initRegionWeightRoulette(EGS_Input*);
     int initScoring();
 	
-	// Scoring function
-    int ausgab(int);
+	// Scoring functions
+    int ausgab(int); 
 	
 	// Parallel submission functions
     int outputData();
@@ -296,6 +296,7 @@ int egs_mird::simulateSingleShower() {
 	int ntry = 0;
 	discard = 0;
 	last_case = current_case;
+	setEdep(0);
 	do {
 		ntry++;
 		if (ntry > 100000) {
@@ -316,7 +317,13 @@ int egs_mird::simulateSingleShower() {
 	} while (ireg < 0);
 	
 	p.ir = ireg; // global geometry region is set
-	
+
+	// if getEdep() is non-zero, then egs_radionuclide_source has invoked userScoring from egs_application
+	// so we score the same here for our 3ddose array
+	int ir = top_p.ir-offset;
+	if (ir > -1 && nreg > ir && ireg && getEdep())
+		score->score(ir, getEdep()*(!p.wt?1:p.wt)); // egs_radionuclide_source sets weight to 0, so use 1
+													// for scoring here
 	int err = startNewShower();
 	if (err) {
 		return err;
