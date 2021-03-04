@@ -73,8 +73,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Lu-177 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Lu-177 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local # Score generated alphas locally
 		:stop spectrum:
 	:stop source:
 	

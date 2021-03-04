@@ -73,8 +73,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Ac-225 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Ac-225 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local # Score generated alphas locally
 		:stop spectrum:
 	:stop source:
 	
@@ -83,8 +84,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Fr-221 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Fr-221 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
@@ -93,8 +95,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = At-217 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = At-217 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
@@ -103,8 +106,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Bi-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Bi-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
@@ -113,8 +117,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Po-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Po-213 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
@@ -123,8 +128,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Tl-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Tl-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
@@ -133,8 +139,9 @@
 		library     = egs_radionuclide_source
 		base source = the_source_location
 		:start spectrum:
-			type    = radionuclide
-			nuclide = Pb-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			type          = radionuclide
+			nuclide       = Pb-209 # Insert any radionuclide in $HEN_HOUSE/spectra/lnhb/ensdf
+			alpha scoring = local
 		:stop spectrum:
 	:stop source:
 	
